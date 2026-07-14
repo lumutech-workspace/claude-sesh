@@ -8,6 +8,7 @@ export type HomeScreenInput = {
   detectedClaude: string | null;
   compatibility: Compatibility;
   profileName?: string;
+  profileEmail?: string;
   updateAvailable?: string;
 };
 
@@ -30,11 +31,12 @@ function buildContentLines(input: HomeScreenInput): {
   footer: ContentLine[];
 } {
   const welcome = input.profileName
-    ? `Welcome back, ${input.profileName}!`
+    ? `Welcome back, @${input.profileName}!`
     : 'Welcome!';
-  const activeLine = input.profileName
-    ? pc.dim(`Active profile: ${pc.white(input.profileName)}`)
+  const activeLine = input.profileEmail
+    ? pc.dim(`Active profile: ${pc.white(input.profileEmail)}`)
     : pc.dim('No active profile yet.');
+
 
   const body: ContentLine[] = [
     pc.bold(pc.white(welcome)),
@@ -45,6 +47,8 @@ function buildContentLines(input: HomeScreenInput): {
     '',
     pc.dim('───── Tips ─────'),
     ...TIPS.map(([cmd, rest]) => `${pc.dim('›')} ${pc.white(cmd)} ${pc.dim(rest)}`),
+    '',
+    `${pc.dim('by')} ${pc.bold('Lumu')} ${pc.dim('· lumutech.com.br')} ${pc.dim('· github.com/lumutech-workspace')}`,
   ];
 
   const detectedLabel = input.detectedClaude
