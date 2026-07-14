@@ -3,6 +3,22 @@
 All notable changes to claude-sesh are documented here.
 Format based on Keep a Changelog. Each release notes the Claude Code version it was tested against.
 
+## [v1.0.0] - 2026-07-14
+
+First stable release. Everything works end to end: register accounts, switch
+profiles, and pick the active one back up without logging in again.
+
+Compatible with Claude Code: v2.1.81
+
+### 🩹 Fixed
+- Switching to a profile whose OS credential no longer exists used to throw an
+  unrecoverable error. The ghost profile is now removed and you can log in or
+  re-add the account on the spot.
+
+### 💄 Improved
+- The home screen greets you by `@name` and shows the active account's email
+  (instead of the profile name), plus a Lumu attribution line.
+
 ## [v0.2.0] - 2026-07-14
 
 Compatible with Claude Code: v2.1.81
