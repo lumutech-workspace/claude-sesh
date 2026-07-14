@@ -1,126 +1,163 @@
 # claude-sesh
 
-A Windows CLI for storing and switching between authenticated Claude Code profiles without repeating browser login for every switch.
+**Switch between multiple Claude Code accounts without logging in through the browser every time.**
+
+Claude Code only remembers one authenticated account at a time. If you juggle a
+work account and a personal one, switching normally means logging out and going
+through browser login again. `claude-sesh` snapshots each account's credentials
+locally so you can jump between them with a single command.
+
+> Windows only, for now. Credentials are stored via Windows Credential Manager.
 
 ## Requirements
 
 - Windows
 - Node.js 20 or newer
-- Claude Code installed
+- Claude Code installed and authenticated at least once
 
-## Installation
+## Install
+
+`claude-sesh` is published to **GitHub Packages** (the public npm registry has
+no copy). Pick the flow that fits you — both end with a global `claude-sesh`
+command on your `PATH`.
+
+### Option A — From GitHub Packages (recommended for users)
+
+GitHub Packages requires authenticating to its npm registry once, even for
+public packages. Create a [personal access token (classic)](https://github.com/settings/tokens)
+with the `read:packages` scope, then tell npm to use it for the org scope:
 
 ```powershell
+# One-time setup — writes ~/.npmrc
+npm config set @lumutech-workspace:registry https://npm.pkg.github.com
+npm config set //npm.pkg.github.com/:_authToken YOUR_GITHUB_TOKEN
+
+# Install the CLI globally
+npm install -g @lumutech-workspace/claude-sesh
+```
+
+The command stays `claude-sesh` regardless of the scoped package name.
+
+### Option B — From the Git repository (for development)
+
+```powershell
+git clone https://github.com/lumutech-workspace/claude-sesh.git
+cd claude-sesh
 npm install
 npm run build
 npm link
 ```
 
-## Usage
+Use `npm run start` to run from source without linking.
 
-Run the interactive menu:
+To remove the global command later, run `npm uninstall -g @lumutech-workspace/claude-sesh`
+(or `npm unlink -g claude-sesh` if you installed with Option B).
 
-```powershell
-claude-sesh
-```
-
-Or use commands directly:
+## Quickstart
 
 ```powershell
-claude-sesh login work
+# Save the account you're currently signed in to
 claude-sesh add work
-claude-sesh list
-claude-sesh use work
-claude-sesh --status
-claude-sesh remove work --yes
-```
 
-## Register accounts
-
-The easiest way to register another account is:
-
-```powershell
+# Log in to another account (opens the browser) and save it as "personal"
 claude-sesh login personal
-```
 
-The command saves the current registered profile when possible, runs Claude Code's official logout and login commands, waits for browser authentication, and registers the newly authenticated account. The new account remains active.
-
-Use `add` when Claude Code is already authenticated with the account you want to save:
-
-```powershell
-claude-sesh add work
-```
-
-When no name is provided, the CLI uses the organization reported by Claude Code. Existing matching profiles are updated instead of duplicated.
-
-## Switch accounts
-
-```powershell
+# Switch back to work whenever you want
 claude-sesh use work
-claude auth status --json
 ```
 
-A profile snapshot contains both the OAuth credentials from `~/.claude/.credentials.json` and the `oauthAccount` identity from `~/.claude.json`. Switching updates both sources and verifies the result with Claude Code before marking the profile active.
+Run `claude-sesh` with no arguments to open the interactive menu instead.
 
-The profile being left is refreshed before switching so token rotation performed by Claude Code is preserved. If any write or verification fails, the CLI attempts to restore both original authentication documents.
+## Commands
 
-Restart open Claude Code or VS Code sessions after switching. A running session may retain or overwrite authentication state from the previous account.
+| Command | What it does |
+| --- | --- |
+| `claude-sesh` | Open the interactive menu |
+| `claude-sesh add [name]` | Save the currently authenticated account as a profile |
+| `claude-sesh login [name]` | Log in to a new account in the browser and save it |
+| `claude-sesh list` | List every saved profile (active one is marked) |
+| `claude-sesh use <name>` | Switch the active account to `<name>` |
+| `claude-sesh --status` | Show the current authentication state |
+| `claude-sesh remove <name> --yes` | Delete a saved profile |
+| `claude-sesh update` | Check for and install a new version |
 
-## Upgrading existing profiles
+When `[name]` is omitted, the CLI names the profile after the organization
+Claude Code reports. Registering a name that already exists updates it instead
+of creating a duplicate.
 
-Profiles created before complete authentication snapshots were introduced do not contain `oauthAccount`. Refresh each account once before switching it:
+## How switching works
 
-```powershell
-claude-sesh login work
-claude-sesh login personal
-```
+Each profile is a snapshot of two things:
 
-You can also authenticate manually and run `claude-sesh add <name>` while the credentials and account identity are consistent.
+- the OAuth credentials from `~/.claude/.credentials.json`
+- the `oauthAccount` identity from `~/.claude.json`
 
-## Updates
+`use` writes both back, then verifies the result against Claude Code before
+marking the profile active. The account you're leaving is refreshed first, so
+any token rotation Claude Code performed is preserved. If a write or the
+verification fails, the CLI restores both original documents.
 
-The home screen footer shows the claude-sesh version, the Claude Code version it was
-tested against, and the Claude Code version currently installed. A yellow warning appears
-when the installed Claude is newer than the tested one.
-
-Check for and install updates on demand:
-
-```powershell
-claude-sesh update
-```
-
-Or choose "Check for updates" from the interactive menu. The command queries the latest
-GitHub Release, and — after you confirm — downloads its source tarball, copies it over the
-current install, and runs `npm install` + `npm run build`. Restart claude-sesh
-afterwards. Updates never run automatically on launch (no network call on startup).
-
-### Publishing a release (maintainers)
-
-Updates are served from GitHub Releases of `lumutech-workspace/claude-sesh`. To publish one:
-
-1. Bump `version` in `package.json`.
-2. Update `COMPATIBLE_CLAUDE_VERSION` in `src/version-info.ts` to the Claude Code version
-   you validated against.
-3. Add an entry to `CHANGELOG.md` (`## [vX.Y.Z] - DATE`, with the `Compatible with Claude
-   Code:` line).
-4. Commit and push to the repository.
-5. Create a GitHub Release with tag `vX.Y.Z` (matching `package.json`). The source tarball
-   GitHub attaches automatically is what the updater downloads — no manual asset needed.
-
-The updater compares the release tag against the installed version and only offers to
-update when the release is newer.
+If a saved profile points to a credential that no longer exists in Windows
+Credential Manager, `claude-sesh` drops the stale entry and offers to log in or
+re-add the account on the spot.
 
 ## Status states
 
 `claude-sesh --status` distinguishes between:
 
-- a verified registered profile;
-- credentials and account identity that do not match;
-- an authenticated account that is not registered;
+- a verified, registered profile;
+- credentials and account identity that don't match;
+- an authenticated account that isn't registered;
 - a logged-out Claude Code session.
 
-## Security and compatibility
+## Updates
 
-OAuth credentials are stored through Windows Credential Manager. Profile names, email addresses, and `oauthAccount` identity metadata are stored separately under the current user's application data directory. OAuth tokens are never printed or stored in profile metadata.
+The home screen footer shows the claude-sesh version, the Claude Code version it
+was tested against, and the Claude Code version currently installed — with a
+warning when the installed Claude is newer than the tested one.
 
-This project orchestrates Claude Code's official authentication commands and reuses local Claude Code OAuth credentials. It does not handle passwords, browser cookies, or authorization codes. Verify that this workflow complies with Anthropic's applicable terms before using or distributing it.
+Updates never run on startup (no network call on launch). Check on demand with
+`claude-sesh update` or the **Check for updates** menu option. The command
+queries the latest GitHub Release and, after you confirm, downloads its source
+tarball, copies it over the current install, and runs `npm install` +
+`npm run build`. Restart `claude-sesh` afterwards.
+
+<details>
+<summary><strong>Publishing a release (maintainers)</strong></summary>
+
+1. Bump `version` in `package.json`.
+2. Update `COMPATIBLE_CLAUDE_VERSION` in `src/version-info.ts` to the Claude
+   Code version you validated against.
+3. Add a `## [vX.Y.Z] - DATE` entry to `CHANGELOG.md`, including the
+   `Compatible with Claude Code:` line.
+4. Commit and push.
+5. Create a GitHub Release with tag `vX.Y.Z` (it **must** match
+   `package.json` — the workflow fails otherwise).
+
+Publishing the release triggers [`.github/workflows/publish.yml`](.github/workflows/publish.yml),
+which builds and publishes `@lumutech-workspace/claude-sesh` to GitHub Packages
+using the CI-provided `GITHUB_TOKEN` — no local token or manual `npm publish`
+needed.
+
+Two independent upgrade paths exist for users: `npm install -g` picks up the new
+GitHub Packages version, and the built-in `claude-sesh update` downloads the
+release source tarball directly. Both only offer versions newer than what's
+installed.
+
+</details>
+
+## Security
+
+OAuth credentials are stored through Windows Credential Manager. Profile names,
+emails, and `oauthAccount` metadata live separately under the current user's
+application data directory. OAuth tokens are never printed or stored in profile
+metadata.
+
+`claude-sesh` orchestrates Claude Code's official authentication commands and
+reuses local Claude Code OAuth credentials. It does not handle passwords,
+browser cookies, or authorization codes. Verify that this workflow complies with
+Anthropic's applicable terms before using or distributing it.
+
+---
+
+Made by [Lumu](https://lumutech.com.br) · [github.com/lumutech-workspace](https://github.com/lumutech-workspace)
