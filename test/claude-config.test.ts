@@ -10,7 +10,7 @@ import {
 } from '../src/claude-config.js';
 
 test('reads the current OAuth account', async () => {
-  const path = join(await mkdtemp(join(tmpdir(), 'claude-profile-')), '.claude.json');
+  const path = join(await mkdtemp(join(tmpdir(), 'claude-sesh-')), '.claude.json');
   await writeFile(path, JSON.stringify({ oauthAccount: { emailAddress: 'old@example.com', organizationUuid: 'org-1' } }));
 
   const snapshot = await readClaudeConfig(path);
@@ -19,7 +19,7 @@ test('reads the current OAuth account', async () => {
 });
 
 test('replaces OAuth account without changing unrelated config', async () => {
-  const path = join(await mkdtemp(join(tmpdir(), 'claude-profile-')), '.claude.json');
+  const path = join(await mkdtemp(join(tmpdir(), 'claude-sesh-')), '.claude.json');
   await writeFile(path, JSON.stringify({ theme: 'dark', oauthAccount: { emailAddress: 'old@example.com' } }));
 
   await replaceOAuthAccount(path, { emailAddress: 'new@example.com', organizationUuid: 'org-2' });
@@ -31,7 +31,7 @@ test('replaces OAuth account without changing unrelated config', async () => {
 });
 
 test('restores the complete original config', async () => {
-  const path = join(await mkdtemp(join(tmpdir(), 'claude-profile-')), '.claude.json');
+  const path = join(await mkdtemp(join(tmpdir(), 'claude-sesh-')), '.claude.json');
   const original = '{"theme":"dark","oauthAccount":{"emailAddress":"old@example.com"}}';
   await writeFile(path, JSON.stringify({ theme: 'light', oauthAccount: { emailAddress: 'new@example.com' } }));
 
@@ -41,7 +41,7 @@ test('restores the complete original config', async () => {
 });
 
 test('rejects config without OAuth account', async () => {
-  const path = join(await mkdtemp(join(tmpdir(), 'claude-profile-')), '.claude.json');
+  const path = join(await mkdtemp(join(tmpdir(), 'claude-sesh-')), '.claude.json');
   await writeFile(path, '{"theme":"dark"}');
 
   await assert.rejects(() => readClaudeConfig(path), /oauthAccount/i);

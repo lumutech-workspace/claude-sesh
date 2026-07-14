@@ -6,7 +6,7 @@ import test from 'node:test';
 import { createStateStore } from '../src/state-store.js';
 
 test('does not write secrets to state.json', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'claude-profile-'));
+  const directory = await mkdtemp(join(tmpdir(), 'claude-sesh-'));
   const state = createStateStore(directory);
   await state.upsert({ name: 'work', email: 'ana@company.com' });
   const content = await readFile(join(directory, 'state.json'), 'utf8');
@@ -15,7 +15,7 @@ test('does not write secrets to state.json', async () => {
 });
 
 test('persists OAuth account identity for a complete profile', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'claude-profile-'));
+  const directory = await mkdtemp(join(tmpdir(), 'claude-sesh-'));
   const state = createStateStore(directory);
   await state.upsert({
     name: 'work',

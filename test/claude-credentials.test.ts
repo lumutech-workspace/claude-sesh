@@ -6,7 +6,7 @@ import test from 'node:test';
 import { replaceCredentials } from '../src/claude-credentials.js';
 
 test('creates a backup before activating new credentials', async () => {
-  const path = join(await mkdtemp(join(tmpdir(), 'claude-profile-')), '.credentials.json');
+  const path = join(await mkdtemp(join(tmpdir(), 'claude-sesh-')), '.credentials.json');
   await writeFile(path, '{"old":true}');
   await replaceCredentials(path, '{"new":true}');
   assert.equal(await readFile(path, 'utf8'), '{"new":true}');
@@ -14,7 +14,7 @@ test('creates a backup before activating new credentials', async () => {
 });
 
 test('preserves current file when new credentials are not valid JSON', async () => {
-  const path = join(await mkdtemp(join(tmpdir(), 'claude-profile-')), '.credentials.json');
+  const path = join(await mkdtemp(join(tmpdir(), 'claude-sesh-')), '.credentials.json');
   await writeFile(path, '{"old":true}');
   await assert.rejects(() => replaceCredentials(path, 'invalido'));
   assert.equal(await readFile(path, 'utf8'), '{"old":true}');
