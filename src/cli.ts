@@ -95,12 +95,45 @@ async function confirmBrowserLogin(): Promise<boolean> {
   return true;
 }
 
+/**
+ * O perfil aponta para credenciais que não existem mais no Credential Manager
+ * (ex.: removidas fora do app, ou dessincronizadas). Em vez de deixar o perfil
+ * "fantasma" preso na lista para sempre, removemos o registro e oferecemos
+ * refazer o cadastro na hora.
+ */
+async function recoverFromMissingCredentials(name: string): Promise<void> {
+  console.log(`\nProfile "${name}" points to credentials that no longer exist. Removing it from the list.`);
+  await service.remove(name);
+  const nextStep = await select({
+    message: 'What would you like to do?',
+    options: [
+      { value: 'login', label: 'Log in and register this account again' },
+      { value: 'add', label: 'Add current profile (already signed in with Claude Code)' },
+      { value: 'back', label: 'Go back' },
+    ],
+  });
+  if (isCancel(nextStep) || nextStep === 'back') return;
+  if (nextStep === 'login') {
+    if (!(await confirmBrowserLogin())) return;
+    const profile = await service.login();
+    console.log(`\n${formatSuccess(`Profile "${profile.name}" authenticated and saved.\n  Email: ${profile.email ?? 'unavailable'}`)}\n${restartWarning}\n`);
+  }
+  if (nextStep === 'add') {
+    const profile = await service.addFromCurrent();
+    console.log(`\n${formatSuccess(`Profile "${profile.name}" saved.\n  Email: ${profile.email ?? 'unavailable'}`)}\n`);
+  }
+}
+
 async function printHomeScreen() {
   const detected = await readInstalledClaudeVersion();
   let profileName: string | undefined;
+  let profileEmail: string | undefined;
   try {
     const status = await service.status();
-    if (status.kind === 'matched') profileName = status.profile;
+    if (status.kind === 'matched') {
+      profileName = status.profile;
+      profileEmail = status.email;
+    }
   } catch { /* status indisponível não deve impedir a tela */ }
   // updateAvailable é omitido de propósito: checar update aqui bloquearia a abertura
   // com uma chamada de rede. O update é sob demanda via "Check for updates".
@@ -110,6 +143,7 @@ async function printHomeScreen() {
     detectedClaude: detected,
     compatibility: classifyCompatibility(COMPATIBLE_CLAUDE_VERSION, detected),
     profileName,
+    profileEmail,
   }));
   console.log('');
 }
@@ -201,8 +235,14 @@ async function runInteractive() {
         });
         if (isCancel(name)) return;
         if (action === 'use') {
-          const profile = await service.use(name);
-          console.log(`\n${formatSuccess(`Active profile changed to "${name}".\n  Email: ${profile.email ?? 'unavailable'}`)}\n${restartWarning}\n`);
+          try {
+            const profile = await service.use(name);
+            console.log(`\n${formatSuccess(`Active profile changed to "${name}".\n  Email: ${profile.email ?? 'unavailable'}`)}\n${restartWarning}\n`);
+          } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (!message.includes('Stored credentials not found')) throw error;
+            await recoverFromMissingCredentials(name);
+          }
         }
         if (action === 'remove') {
           const confirmation = await select({
