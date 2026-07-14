@@ -1,0 +1,34 @@
+{
+  "name": "claude-profile",
+  "version": "0.1.0",
+  "description": "CLI for switching local Claude Code profiles on Windows",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lumutech-workspace/claude-sesh"
+  },
+  "private": true,
+  "type": "module",
+  "bin": {
+    "claude-profile": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "tsx --test test/types.test.ts test/state-store.test.ts test/claude-credentials.test.ts test/claude-config.test.ts test/profile-service.test.ts test/claude-auth.test.ts test/interactive.test.ts test/cli.test.ts test/version-compare.test.ts test/claude-version.test.ts test/version-info.test.ts test/logo.test.ts test/box.test.ts test/home-screen.test.ts test/updater.test.ts",
+    "start": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.7.0",
+    "commander": "^14.0.0",
+    "cross-keychain": "^1.1.0",
+    "picocolors": "^1.1.1",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

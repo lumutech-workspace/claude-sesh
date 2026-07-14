@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.log
+.claude/
+docs/superpowers/
+.superpowers/
+*.credentials.json
