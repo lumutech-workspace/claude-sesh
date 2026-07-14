@@ -34,7 +34,7 @@ export const GITHUB_REPO = 'lumutech-workspace/claude-sesh';
 
 export async function fetchLatestRelease(repo = GITHUB_REPO): Promise<GithubRelease> {
   const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
-    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'claude-profile' },
+    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'claude-sesh' },
   });
   if (!res.ok) throw new Error(`GitHub API responded ${res.status}`);
   return (await res.json()) as GithubRelease;

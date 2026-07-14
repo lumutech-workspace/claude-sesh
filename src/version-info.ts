@@ -4,7 +4,7 @@ const pkg = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
 ) as { version: string };
 
-/** Versão atual do claude-profile (fonte canônica: package.json). */
+/** Versão atual do claude-sesh (fonte canônica: package.json). */
 export const APP_VERSION: string = pkg.version;
 
 /**

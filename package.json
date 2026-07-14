@@ -1,5 +1,5 @@
 {
-  "name": "claude-profile",
+  "name": "claude-sesh",
   "version": "0.1.0",
   "description": "CLI for switching local Claude Code profiles on Windows",
   "repository": {
@@ -9,7 +9,7 @@
   "private": true,
   "type": "module",
   "bin": {
-    "claude-profile": "dist/cli.js"
+    "claude-sesh": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",

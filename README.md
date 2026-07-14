@@ -1,4 +1,4 @@
-# claude-profile
+# claude-sesh
 
 A Windows CLI for storing and switching between authenticated Claude Code profiles without repeating browser login for every switch.
 
@@ -21,18 +21,18 @@ npm link
 Run the interactive menu:
 
 ```powershell
-claude-profile
+claude-sesh
 ```
 
 Or use commands directly:
 
 ```powershell
-claude-profile login work
-claude-profile add work
-claude-profile list
-claude-profile use work
-claude-profile --status
-claude-profile remove work --yes
+claude-sesh login work
+claude-sesh add work
+claude-sesh list
+claude-sesh use work
+claude-sesh --status
+claude-sesh remove work --yes
 ```
 
 ## Register accounts
@@ -40,7 +40,7 @@ claude-profile remove work --yes
 The easiest way to register another account is:
 
 ```powershell
-claude-profile login personal
+claude-sesh login personal
 ```
 
 The command saves the current registered profile when possible, runs Claude Code's official logout and login commands, waits for browser authentication, and registers the newly authenticated account. The new account remains active.
@@ -48,7 +48,7 @@ The command saves the current registered profile when possible, runs Claude Code
 Use `add` when Claude Code is already authenticated with the account you want to save:
 
 ```powershell
-claude-profile add work
+claude-sesh add work
 ```
 
 When no name is provided, the CLI uses the organization reported by Claude Code. Existing matching profiles are updated instead of duplicated.
@@ -56,7 +56,7 @@ When no name is provided, the CLI uses the organization reported by Claude Code.
 ## Switch accounts
 
 ```powershell
-claude-profile use work
+claude-sesh use work
 claude auth status --json
 ```
 
@@ -71,27 +71,27 @@ Restart open Claude Code or VS Code sessions after switching. A running session 
 Profiles created before complete authentication snapshots were introduced do not contain `oauthAccount`. Refresh each account once before switching it:
 
 ```powershell
-claude-profile login work
-claude-profile login personal
+claude-sesh login work
+claude-sesh login personal
 ```
 
-You can also authenticate manually and run `claude-profile add <name>` while the credentials and account identity are consistent.
+You can also authenticate manually and run `claude-sesh add <name>` while the credentials and account identity are consistent.
 
 ## Updates
 
-The home screen footer shows the claude-profile version, the Claude Code version it was
+The home screen footer shows the claude-sesh version, the Claude Code version it was
 tested against, and the Claude Code version currently installed. A yellow warning appears
 when the installed Claude is newer than the tested one.
 
 Check for and install updates on demand:
 
 ```powershell
-claude-profile update
+claude-sesh update
 ```
 
 Or choose "Check for updates" from the interactive menu. The command queries the latest
 GitHub Release, and — after you confirm — downloads its source tarball, copies it over the
-current install, and runs `npm install` + `npm run build`. Restart claude-profile
+current install, and runs `npm install` + `npm run build`. Restart claude-sesh
 afterwards. Updates never run automatically on launch (no network call on startup).
 
 ### Publishing a release (maintainers)
@@ -112,7 +112,7 @@ update when the release is newer.
 
 ## Status states
 
-`claude-profile --status` distinguishes between:
+`claude-sesh --status` distinguishes between:
 
 - a verified registered profile;
 - credentials and account identity that do not match;

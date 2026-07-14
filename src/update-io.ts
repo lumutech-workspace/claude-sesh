@@ -19,14 +19,14 @@ export function resolvePackageDir(): string {
 
 /** Diretório temporário exclusivo para a atualização. */
 export function resolveTmpDir(): string {
-  return join(tmpdir(), 'claude-profile-update');
+  return join(tmpdir(), 'claude-sesh-update');
 }
 
 /** Baixa uma URL para um arquivo local (segue redirects do GitHub/codeload). */
 export async function download(url: string, dest: string): Promise<void> {
   await mkdir(dirname(dest), { recursive: true });
   const res = await fetch(url, {
-    headers: { 'User-Agent': 'claude-profile' },
+    headers: { 'User-Agent': 'claude-sesh' },
     redirect: 'follow',
   });
   if (!res.ok || !res.body) throw new Error(`Download failed: HTTP ${res.status}`);

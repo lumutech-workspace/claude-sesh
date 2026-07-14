@@ -1,7 +1,7 @@
 import { deletePassword, getPassword, setPassword } from 'cross-keychain';
 import type { CredentialStore } from './types.js';
 
-const service = 'claude-profile';
+const service = 'claude-sesh';
 export const createCredentialStore = (): CredentialStore => ({
   get: (name) => getPassword(service, name),
   set: (name, value) => setPassword(service, name, value),
