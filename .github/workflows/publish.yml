@@ -1,0 +1,40 @@
+name: Publish to GitHub Packages
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://npm.pkg.github.com
+          scope: '@lumutech-workspace'
+
+      - run: npm install
+
+      - run: npm run build
+
+      # Fail early if the release tag doesn't match package.json version,
+      # so we never publish a mislabeled package.
+      - name: Verify tag matches package version
+        run: |
+          PKG_VERSION="v$(node -p "require('./package.json').version")"
+          TAG="${GITHUB_REF_NAME}"
+          if [ "$PKG_VERSION" != "$TAG" ]; then
+            echo "Release tag ($TAG) does not match package.json ($PKG_VERSION)"
+            exit 1
+          fi
+
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
