@@ -30,7 +30,7 @@ import {
 import { createProfileService } from './profile-service.js';
 import { createStateStore } from './state-store.js';
 
-const state = createStateStore(join(process.env.APPDATA ?? homedir(), 'claude-profile'));
+const state = createStateStore(join(process.env.APPDATA ?? homedir(), 'claude-sesh'));
 const credentials = {
   read: () => readCredentials(),
   replace: (contents: string) => replaceCredentials(defaultCredentialsPath(), contents),
@@ -51,7 +51,7 @@ const service = createProfileService(
 );
 
 const program = new Command()
-  .name('claude-profile')
+  .name('claude-sesh')
   .description('Manage local Claude Code profiles on Windows');
 
 program.command('add [name]').action(async (name) => {
@@ -59,18 +59,22 @@ program.command('add [name]').action(async (name) => {
   console.log(formatSuccess(`Profile "${profile.name}" saved.\n  Email: ${profile.email ?? 'unavailable'}`));
 });
 program.command('login [name]').action(async (name) => {
+  if (!(await confirmBrowserLogin())) return;
   const profile = await service.login(name);
   console.log(formatSuccess(`Profile "${profile.name}" authenticated and saved.\n  Email: ${profile.email ?? 'unavailable'}`));
   console.log(restartWarning);
 });
-program.command('list').action(async () => console.log(formatList(await service.list())));
+program.command('list').action(async () => {
+  const { profiles, activeProfile } = await service.list();
+  console.log(formatList(profiles, activeProfile));
+});
 program.command('use <name>').action(async (name) => {
   const profile = await service.use(name);
   console.log(formatSuccess(`Active profile changed to "${name}".\n  Email: ${profile.email ?? 'unavailable'}`));
   console.log(restartWarning);
 });
 program.command('remove <name>').option('--yes', 'confirm removal').action(async (name, options) => {
-  if (!options.yes) throw new Error('Removal requires confirmation. Run: claude-profile remove <name> --yes');
+  if (!options.yes) throw new Error('Removal requires confirmation. Run: claude-sesh remove <name> --yes');
   await service.remove(name);
   console.log(formatSuccess(`Profile "${name}" removed.`));
 });
@@ -80,6 +84,16 @@ program.command('update').action(async () => {
 program.option('--status', 'show the active profile').action(async (options) => {
   if (options.status) console.log(formatStatus(await service.status()));
 });
+
+async function confirmBrowserLogin(): Promise<boolean> {
+  console.log('\nThis will open your browser automatically to sign in to Claude Code.');
+  const proceed = await confirm({ message: 'Continue?' });
+  if (isCancel(proceed) || !proceed) {
+    console.log('Login canceled.\n');
+    return false;
+  }
+  return true;
+}
 
 async function printHomeScreen() {
   const detected = await readInstalledClaudeVersion();
@@ -136,7 +150,7 @@ async function runUpdateFlow() {
   try {
     console.log(`\nDownloading and installing v${update.latest}...`);
     await apply(update);
-    console.log(`\n[OK] Updated to v${update.latest}. Restart claude-profile to use the new version.\n`);
+    console.log(`\n[OK] Updated to v${update.latest}. Restart claude-sesh to use the new version.\n`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.log(`\n${message}\n`);
@@ -154,23 +168,31 @@ async function runInteractive() {
         exitRequested = true;
         return;
       }
-      if (action === 'list') console.log(`\n${formatList(await service.list())}\n`);
+      if (action === 'list') {
+        const { profiles, activeProfile } = await service.list();
+        console.log(`\n${formatList(profiles, activeProfile)}\n`);
+      }
       if (action === 'status') console.log(`\n${formatStatus(await service.status())}\n`);
       if (action === 'add') {
         const profile = await service.addFromCurrent();
         console.log(`\n${formatSuccess(`Profile "${profile.name}" saved.\n  Email: ${profile.email ?? 'unavailable'}`)}\n`);
       }
       if (action === 'login') {
+        if (!(await confirmBrowserLogin())) return;
         const profile = await service.login();
         console.log(`\n${formatSuccess(`Profile "${profile.name}" authenticated and saved.\n  Email: ${profile.email ?? 'unavailable'}`)}\n${restartWarning}\n`);
       }
       if (action === 'update') {
         await runUpdateFlow();
       }
+      if (action === 'clear') {
+        console.clear();
+        await printHomeScreen();
+      }
       if (action === 'use' || action === 'remove') {
-        const profiles = await service.list();
+        const { profiles, activeProfile } = await service.list();
         if (profiles.length === 0) {
-          console.log(`\n${formatList(profiles)}\n`);
+          console.log(`\n${formatList(profiles, activeProfile)}\n`);
           return;
         }
         const name = await select({

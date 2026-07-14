@@ -156,7 +156,10 @@ export function createProfileService(
 
   return {
     addFromCurrent,
-    async list() { return (await state.read()).profiles; },
+    async list() {
+      const { profiles, activeProfile } = await state.read();
+      return { profiles, activeProfile };
+    },
     async use(name: string) {
       const originalState = await state.read();
       const target = originalState.profiles.find((profile) => profile.name === name);
@@ -164,7 +167,7 @@ export function createProfileService(
       if (!target.oauthAccount) {
         throw new Error(
           `Profile “${name}” was saved by an older version. Refresh the profile with `
-          + `claude-profile add ${name} or claude-profile login ${name} before switching.`,
+          + `claude-sesh add ${name} or claude-sesh login ${name} before switching.`,
         );
       }
 
@@ -241,7 +244,12 @@ export function createProfileService(
       return profile;
     },
     async remove(name: string) {
-      await store.remove(name);
+      try {
+        await store.remove(name);
+      } catch (error: unknown) {
+        // A credencial pode já não existir (ex.: remoção anterior parcial). O objetivo
+        // do usuário é que o perfil suma da lista; não deixamos isso bloquear a limpeza do estado.
+      }
       await state.remove(name);
     },
   };

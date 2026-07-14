@@ -29,6 +29,25 @@ test('empty list explains that no profiles are registered', () => {
   assert.equal(formatList([]), 'No profiles registered.');
 });
 
-test('interactive menu exposes all available actions', () => {
-  assert.deepEqual(interactiveActions.map((action) => action.value), ['add', 'login', 'list', 'status', 'use', 'remove', 'update', 'exit']);
+test('list numbers each profile', () => {
+  const output = formatList([{ name: 'work', email: 'a@b.com' }, { name: 'personal', email: 'c@d.com' }]);
+  assert.match(output, /1\. work/);
+  assert.match(output, /2\. personal/);
+});
+
+test('list marks the active profile and leaves others unmarked', () => {
+  const output = formatList(
+    [{ name: 'work', email: 'a@b.com' }, { name: 'personal', email: 'c@d.com' }],
+    'personal',
+  );
+  const lines = output.split('\n');
+  assert.match(lines.find((line) => line.includes('personal')) ?? '', /→.*\(active\)/);
+  assert.doesNotMatch(lines.find((line) => line.includes('work')) ?? '', /→|\(active\)/);
+});
+
+test('interactive menu orders frequent actions before rare setup actions', () => {
+  assert.deepEqual(
+    interactiveActions.map((action) => action.value),
+    ['use', 'list', 'status', 'remove', 'add', 'login', 'update', 'clear', 'exit'],
+  );
 });

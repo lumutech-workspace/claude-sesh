@@ -93,7 +93,17 @@ function createHarness(options: HarnessOptions = {}) {
 
   return {
     service: createProfileService(
-      { get: async (name) => stored.get(name) ?? null, set: async (name, value) => void stored.set(name, value), list: async () => [...stored.keys()], remove: async (name) => stored.delete(name) },
+      {
+        get: async (name) => stored.get(name) ?? null,
+        set: async (name, value) => void stored.set(name, value),
+        list: async () => [...stored.keys()],
+        // Mirrors cross-keychain's real behavior: deleting a missing credential throws.
+        remove: async (name) => {
+          if (!stored.has(name)) throw new Error('Password not found');
+          stored.delete(name);
+          return true;
+        },
+      },
       state,
       credentials,
       claudeConfig,
@@ -287,4 +297,46 @@ test('does not create a profile when Claude login fails', async () => {
   assert.deepEqual(harness.authActions, ['logout', 'login']);
   assert.equal(harness.stored.has('personal'), false);
   assert.equal(harness.activeProfile, 'work');
+});
+
+test('removes a profile and its stored credentials', async () => {
+  const harness = createHarness({
+    profiles: [
+      { name: 'work', email: 'dev@company.com', oauthAccount: workAccount },
+      { name: 'personal', email: 'dev@example.com', oauthAccount: personalAccount },
+    ],
+    activeProfile: 'personal',
+  });
+
+  await harness.service.remove('work');
+
+  assert.equal(harness.stored.has('work'), false);
+  assert.deepEqual(harness.profiles.map((profile) => profile.name), ['personal']);
+});
+
+test('clears the active profile when the removed profile was active', async () => {
+  const harness = createHarness({
+    profiles: [{ name: 'work', email: 'dev@company.com', oauthAccount: workAccount }],
+    activeProfile: 'work',
+  });
+
+  await harness.service.remove('work');
+
+  assert.equal(harness.activeProfile, undefined);
+});
+
+test('still clears profile state even when the stored credential is already gone', async () => {
+  const harness = createHarness({
+    profiles: [{ name: 'work', email: 'dev@company.com', oauthAccount: workAccount }],
+    activeProfile: 'work',
+  });
+  // Simulates a credential that disappeared from the OS keychain outside this flow
+  // (e.g. a prior partial removal), which used to make deletePassword throw and
+  // abort the whole remove() before the profile state was ever cleaned up.
+  harness.stored.delete('work');
+
+  await harness.service.remove('work');
+
+  assert.deepEqual(harness.profiles, []);
+  assert.equal(harness.activeProfile, undefined);
 });

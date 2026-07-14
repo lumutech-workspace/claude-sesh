@@ -7,9 +7,16 @@ export function visibleWidth(s: string): number {
   return s.replace(ANSI, '').length;
 }
 
-/** Trunca (sem ANSI) uma string para no máximo `width` colunas visíveis. */
+/**
+ * Trunca (sem ANSI) uma string para no máximo `width` colunas visíveis.
+ * Quando corta texto de verdade, termina com "…" para indicar o corte
+ * (mesmo padrão visual do próprio Claude Code em janelas estreitas).
+ */
 function truncateToWidth(content: string, width: number): string {
-  return content.replace(ANSI, '').slice(0, Math.max(0, width));
+  const plain = content.replace(ANSI, '');
+  if (plain.length <= width) return plain;
+  if (width <= 1) return plain.slice(0, Math.max(0, width));
+  return `${plain.slice(0, width - 1)}…`;
 }
 
 /**

@@ -27,7 +27,7 @@ test('renders generic welcome without profile name', () => {
 
 test('renders footer with all three versions and the new labels', () => {
   const out = stripAnsi(renderHomeScreen(base));
-  assert.match(out, /claude-profile v0\.1\.0/);
+  assert.match(out, /claude-sesh v0\.1\.0/);
   assert.match(out, /Compatible with Claude v2\.1\.81/);
   assert.match(out, /detected v2\.1\.81/);
 });
@@ -52,9 +52,48 @@ test('shows update line when an update is available', () => {
   assert.match(out, /Update available: v0\.2\.0/);
 });
 
-test('includes brand credit and tips', () => {
+test('includes tips', () => {
   const out = stripAnsi(renderHomeScreen(base));
-  assert.match(out, /lumutech\.com\.br/);
   assert.match(out, /Tips/);
   assert.match(out, /login/);
+});
+
+test('shows the active profile name', () => {
+  const out = stripAnsi(renderHomeScreen(base));
+  assert.match(out, /Active profile: Murilo/);
+});
+
+test('shows a fallback when there is no active profile', () => {
+  const out = stripAnsi(renderHomeScreen({ ...base, profileName: undefined }));
+  assert.match(out, /No active profile yet\./);
+});
+
+test('keeps the box border and a single consistent width on narrow terminals', () => {
+  const original = process.stdout.columns;
+  Object.defineProperty(process.stdout, 'columns', { value: 40, configurable: true });
+  try {
+    const out = stripAnsi(renderHomeScreen(base));
+    assert.match(out, /╭/);
+    const lines = out.split('\n');
+    const widths = new Set(lines.map((line) => line.length));
+    assert.equal(widths.size, 1, `expected a single consistent width, got: ${[...widths]}`);
+    // Conteúdo mais longo que a largura é truncado com "…", nunca quebra para a linha seguinte.
+    assert.match(out, /…/);
+  } finally {
+    Object.defineProperty(process.stdout, 'columns', { value: original, configurable: true });
+  }
+});
+
+test('keeps the box border and a single consistent width on wide terminals', () => {
+  const original = process.stdout.columns;
+  Object.defineProperty(process.stdout, 'columns', { value: 100, configurable: true });
+  try {
+    const out = stripAnsi(renderHomeScreen(base));
+    assert.match(out, /╭/);
+    const lines = out.split('\n');
+    const widths = new Set(lines.map((line) => line.length));
+    assert.equal(widths.size, 1, `expected a single consistent width, got: ${[...widths]}`);
+  } finally {
+    Object.defineProperty(process.stdout, 'columns', { value: original, configurable: true });
+  }
 });
